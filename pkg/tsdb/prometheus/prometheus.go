@@ -19,13 +19,14 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana/pkg/infra/httpclient"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin/coreplugin"
 	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
-	"github.com/opentracing/opentracing-go"
 	"github.com/prometheus/client_golang/api"
 	apiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var (
@@ -136,11 +137,11 @@ func (s *Service) QueryData(ctx context.Context, req *backend.QueryDataRequest) 
 	for _, query := range queries {
 		plog.Debug("Sending query", "start", query.Start, "end", query.End, "step", query.Step, "query", query.Expr)
 
-		span, ctx := opentracing.StartSpanFromContext(ctx, "datasource.prometheus")
-		span.SetTag("expr", query.Expr)
-		span.SetTag("start_unixnano", query.Start.UnixNano())
-		span.SetTag("stop_unixnano", query.End.UnixNano())
-		defer span.Finish()
+		ctx, span := tracing.Tracer.Start(ctx, "datasource.prometheus")
+		span.SetAttributes(attribute.Key("expr").String(query.Expr))
+		span.SetAttributes(attribute.Key("start_unixnano").Int64(query.Start.UnixNano()))
+		span.SetAttributes(attribute.Key("stop_unixnano").Int64(query.End.UnixNano()))
+		defer span.End()
 
 		response := make(map[PrometheusQueryType]model.Value)
 
