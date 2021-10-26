@@ -4,7 +4,7 @@ import { Task, TaskRunner } from './task';
 import rimrafCallback from 'rimraf';
 import { resolve as resolvePath } from 'path';
 import { promisify } from 'util';
-import globby from 'globby';
+import { globby } from 'globby';
 import execa from 'execa';
 import { constants as fsConstants, promises as fs } from 'fs';
 import { CLIEngine } from 'eslint';
